@@ -95,17 +95,11 @@ class Game:
         next_next_j = j
 
         if action == 'U':
-            # fix by forom
-            next_i = max(i - 1, 0)
-            next_next_i = max(i - 2, 0)
-            # next_i = min(i + 1, self._map.shape[0] - 1)
-            # next_next_i = min(i + 2, self._map.shape[0] - 1)
-        elif action == 'D':
-            # also fixed by forom
             next_i = min(i + 1, self._map.shape[0] - 1)
             next_next_i = min(i + 2, self._map.shape[0] - 1)
-            # next_i = max(i - 1, 0)
-            # next_next_i = max(i - 2, 0)
+        elif action == 'D':
+            next_i = max(i - 1, 0)
+            next_next_i = max(i - 2, 0)
         elif action == 'R':
             next_j = min(j + 1, self._map.shape[1] - 1)
             next_next_j = min(j + 2, self._map.shape[1] - 1)
