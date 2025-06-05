@@ -9,7 +9,7 @@ GOAL = 2
 AGENT_ON_GOAL = 3
 WALL = 99
 FLOOR = 98
-MAX_DEPTH = 6
+MAX_DEPTH = 3
 DISCOUNT = 0.9
 
 class Controller:
@@ -34,6 +34,10 @@ class Controller:
         self.opening_door_reward = self.model['opening_door_reward']
         self.step_punishment = self.model['step_punishment']
 
+        self.max_depth = MAX_DEPTH
+        self.discount = DISCOUNT
+
+
         # init all V0(s)
         # helper to freeze a map so we can use it as a key
         def freeze_map(map_array):
@@ -43,127 +47,140 @@ class Controller:
         # value function: (frozen_map, steps_left) -> value
         self.V = {}
 
-        # i will init every state in live - if it allready exiset i will get it otherwise i will make it to 0 - Dynamic Programming with memoization
-        def get_value(state):
-            if state not in self.V:
-                self.V[state] = 0
-            return self.V[state]
+        # # i will init every state in live - if it allready exiset i will get it otherwise i will make it to 0 - Dynamic Programming with memoization
+        def get_value(self, frozen_map, steps_left):
+            key = (frozen_map, steps_left)
+            if key not in self.V:
+                self.V[key] = 0
+            return self.V[key]
+
 
         self.get_value = get_value
 
                 
+    # this function is to make the agent want to get closer to - 1) key blockes, 2) goal
+    # becuase -2 all the time it is not mach
+    def heuristic_value(self, state):
+        game_map, agent_pos, steps_taken, done, success = state
+        reward = 0
+
+        # קרבה למטרה
+        goal_positions = np.argwhere((game_map == GOAL) | (game_map == AGENT_ON_GOAL))
+        if len(goal_positions) > 0:
+            goal_pos = goal_positions[0]
+            reward += 5 / (1 + np.abs(agent_pos[0] - goal_pos[0]) + np.abs(agent_pos[1] - goal_pos[1]))  # ככל שקרוב, יותר טוב
+
+        # קרבה ללוח (מפתחות) - ערכים 10 עד 19
+        plate_positions = np.argwhere((game_map >= 10) & (game_map <= 19))
+        if len(plate_positions) > 0:
+            dists = [np.abs(agent_pos[0] - p[0]) + np.abs(agent_pos[1] - p[1]) for p in plate_positions]
+            reward += 3 / (1 + min(dists))  # ככל שקרוב ללוח, יותר טוב
+
+        # עונש על קרבה לדלת סגורה (30–39)
+        # door_positions = np.argwhere((game_map >= 30) & (game_map <= 39))
+        # if len(door_positions) > 0:
+        #     dists = [np.abs(agent_pos[0] - p[0]) + np.abs(agent_pos[1] - p[1]) for p in door_positions]
+        #     reward -= 2 / (1 + min(dists))  # להרתיע מלהיתקע בדלת
+
+        return reward
 
     # this fucntion will get a state that exiest -> make a copy of the game in this state
     # use the function submit_next_action on the copy -> return the new state and the reward this action gave
-    def simulate_action_on_copy(self, frozen_map, steps_left, action):
-        # print(f"[DEBUG] simulate_action_on_copy: action={action}, steps_left={steps_left}")
+    def simulate_action(self, state, action):
+        """
+        Simulates the result of taking `action` from `state`,
+        using deepcopy of the original game and submit_next_action.
 
-        # 1 - first make a copy - it will be type game
-        new_game = copy.deepcopy(self.original_game)
+        Returns:
+            next_state: the resulting state tuple (map, pos, steps, done, success)
+            reward: reward gained from this action
+        """
+        # שלוף נתונים מהמצב הנוכחי
+        current_map, current_pos, steps_so_far, _, _ = state
 
+        # צור עותק עמוק של המשחק
+        sim_game = copy.deepcopy(self.original_game)
 
-        # 2 - take the frozen map and remake it
-        map_shape = self.map.shape
-        map_array = np.array(frozen_map).reshape(map_shape)
-        new_game._map = map_array
+        # עדכן את עותק המשחק למצב הרצוי
+        sim_game._map = np.copy(current_map)
+        sim_game._agent_pos = current_pos
+        sim_game._steps = steps_so_far
+        sim_game._reward = 0  # נחשב רק את התגמול של הצעד הזה
 
-        # 3 - find the agent position - mabay the agent is on goal
-        agent_locs = np.argwhere((new_game._map == AGENT) | (new_game._map == AGENT_ON_GOAL))
-        new_game._agent_pos = agent_locs[0] if len(agent_locs) > 0 else (-1, -1)
+        # בצע את הפעולה
+        sim_game.submit_next_action(action)
 
+        # קבל את המצב הבא ואת התגמול שהתקבל
+        next_state = sim_game.get_current_state()
+        reward = sim_game.get_current_reward()
 
-        # now i can change the map safley - i will keep the reward before i do the action
-        if hasattr(new_game, "_reward"):
-            reward_before = new_game._reward
-        else:
-            reward_before = 0
-        
-        # do the action - 
-        new_game.submit_next_action(action)
-        # keep the new reward - submit is the one that updated the reward
-        reward_after = new_game._reward
-        reward = reward_after - reward_before
-
-        frozen_next_map = self.freeze_map(new_game._map)
-        next_steps_left = steps_left - 1
-        # return the new state + how mach steps left
-        return (frozen_next_map, next_steps_left), reward
+        return next_state, reward
+    
 
 
     # in this function i reurn the new val : Vk+1(s) <- max ∑ P(s, a, s')[R(s, a, s') + discount*Vk(s')]
     # - i need to check - R U D L
     # inthis function i get - the map of a old state , how much steps left, take an action
-    def expected_value(self, frozen_map, steps_left, chosen_action):
-        expected = 0
+    def expected_value(self, state, depth, chosen_action):
+        """
+        Computes the expected value of performing chosen_action at the given state,
+        by simulating all possible resulting actions (due to stochasticity).
 
-        possible_actions = ["U", "L", "R", "D"]
+        Arguments:
+            state: tuple (map, agent_pos, steps_taken, done, success)
+            depth: current depth in recursion (0..MAX_DEPTH)
+            chosen_action: str, one of "U", "D", "L", "R"
+
+        Returns:
+            expected_value: float
+        """
+        total_value = 0
+        # רשימת כל הפעולות האפשריות בפועל (U/L/R/D)
+        actual_actions = ["U", "L", "R", "D"]
         probs = self.chosen_action_prob[chosen_action]
 
-        for actual_action, prob in zip(possible_actions, probs):
-            if prob == 0:
-                continue
+        for idx, actual_action in enumerate(actual_actions):
+            prob = probs[idx]
+            next_state, reward = self.simulate_action(state, actual_action)
 
-            next_state, reward = self.simulate_action_on_copy(frozen_map, steps_left, actual_action)
+            if depth == self.max_depth or next_state[3]:  # next_state[3] == done
+                value = reward + self.heuristic_value(next_state)
+            else:
+                value = reward + self.discount * self.best_action_value(next_state, depth + 1)
 
-            # נוסיף פה את העומק! נריץ value_iteration על המצב הבא
-            if next_state[1] > 0:  # יש צעדים
-                self.value_iteration(*next_state)
+            total_value += prob * value
 
-            value = self.get_value(next_state)
-
-            expected += prob * (reward + DISCOUNT * value)
-        # print(f"[DEBUG] expected_value: chosen_action={chosen_action}, steps_left={steps_left}")
+        return total_value
 
 
-        return expected
+    def best_action_value(self, state, depth):
+        """
+        Returns the maximum expected value achievable from this state
+        by choosing the best possible action at current depth.
+        """
+        best_val = -float('inf')
+        for action in ["U", "D", "L", "R"]:
+            val = self.expected_value(state, depth, action)
+            if val > best_val:
+                best_val = val
+        return best_val
 
-
-
-    def value_iteration(self, frozen_map, steps_left):
-        print(f"\n[DEBUG] value_iteration: steps_left={steps_left}, real_depth={self.max_steps - steps_left}, state={frozen_map}")
-
-         # חישוב עומק הרקורסיה לפי כמה צעדים כבר עברו
-        real_depth = self.max_steps - steps_left
-        if steps_left == 0 or real_depth >= MAX_DEPTH:
-            return
-
-        state = (frozen_map, steps_left)
-
-        best_value = float('-inf')
-
-        for action in ["U", "L", "R", "D"]:
-            ev = self.expected_value(frozen_map, steps_left, action)
-            best_value = max(best_value, ev)
-
-        self.V[state] = best_value
-
+       
 
     def choose_next_action(self, state):
         """Choose next action for a pressure plate game given the current state of the game.
         """
+        # print(">> Choosing next action...")
+        best_val = -float('inf')
+        best_action = "U"  # ברירת מחדל
 
-        map_array, agent_pos, steps_taken, done, success = state
-        steps_left = self.max_steps - steps_taken - 1
-        print(f"\n[DEBUG] choose_next_action: steps_left={steps_left}, agent_pos={agent_pos}")
-        self.game = copy.deepcopy(self.original_game)
-        self.game._map = np.copy(map_array)
-        self.game._agent_pos = agent_pos
+        for action in ["U", "D", "L", "R"]:
+            val = self.expected_value(state, 0, action)
+            # print(f"[DEPTH=0] Trying action: {action} -> expected value: {val}")
 
-        if steps_left <= 0:
-            return "U"  # ברירת מחדל בטוחה
-
-        frozen_map = self.freeze_map(map_array)
-        self.value_iteration(frozen_map, steps_left)
-
-        best_action = None
-        best_value = float('-inf')
-
-        for action in ["U", "L", "R", "D"]:
-            ev = self.expected_value(frozen_map, steps_left, action)
-            print(f"action={action}, expected_value={ev}") 
-            if ev > best_value:
-                best_value = ev
+            if val > best_val:
+                best_val = val
                 best_action = action
-
-        return best_action if best_action is not None else "U"
+        # print(f"Chosen action: {best_action}")
+        return best_action
 
