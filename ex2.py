@@ -1,186 +1,200 @@
 import pressure_plate
+import numpy as np
+from collections import deque
+import copy
 from ex1 import PressurePlateProblem
 from search import astar_search
 
-id = ["212437453"]
+id = ["211548045"]
 
+
+""" Rules """
+BLANK = 0
+WALL = 99
+FLOOR = 98
 AGENT = 1
 GOAL = 2
 AGENT_ON_GOAL = 3
-WALL = 99
-FLOOR = 98
 
-# rewards
-A_STAR_REWARD = 200
-DEFAULT_REWARD = -2
-WALL_REWARD = -999
 
-#
-DISCOUNT = 0.9
-MAX_DEPTH = 5
+forced_actions = {'U': [1, 0, 0, 0],
+                  'L': [0, 1, 0, 0],
+                  'R': [0, 0, 1, 0],
+                  'D': [0, 0, 0, 1]}
 
-DIRECTION = {
-    'U': (-1, 0),
-    'D': (1, 0),
-    'L': (0, -1),
-    'R': (0, 1) 
-    }
 
 class Controller:
-    """
-    Controller that strictly forces the agent to follow the A* path,
-    step-by-step, regardless of stochastic results.
-    """
+    """This class is a controller for a pressure plate game."""
 
     def __init__(self, game: pressure_plate.Game):
+        """Initialize controller for given game model.
+        """
         self.original_game = game
-        self.map, self.agent_pos, _, _, _ = self.original_game.get_current_state()
-        self.astar_path = self.compute_astar_path()
-        print("🧭 Forced A* path:", self.astar_path)
-        self.step_counter = 0
-        self.rows , self.cols = self.map.shape
+        self.map = game.get_current_state()[0]
+        p = PressurePlateProblem(self.map)
+        Node, expanded = astar_search(p)
+        solve = Node.path()[::-1] # why -1 for the last step
+        solution = [pi.action for pi in solve][1:]
+        swap = {'U': 'D', 'D': 'U'}
+        new_solution = [swap.get(a, a) for a in solution]
+        sol_nodes = self.create_sol_nodes(new_solution)
+        self.V_solution, self.pai_solution = self.create_sol_policy(new_solution, sol_nodes)
+        pos = np.argwhere(self.map == pressure_plate.GOAL)
+        self.goal = (pos[0][0], pos[0][1])
+        reachable_states = self.create_reachable_nodes(sol_nodes)
+        # print(len(reachable_states))
+        self.V, self.pai = self.value_iteration(reachable_states=reachable_states)
 
-        # get the steps that match the actions
-        self.path_positions = self.discover_path_steps()
-
-        # inital the map with V(0) - by this rules:
-        # 1 - wall will be infinite  | 2- step from path - positive num | door for now will be 0
-        self.reward_map = self.initialize_reward_map()
-        # print("🎯 Reward Map (V0):")
-        # for row in self.reward_map:
-        #     print(" ".join(f"{val:4}" for val in row))
-
-
-      
-    # this func - convert the steps of the A* path in to cells in the map
-    def discover_path_steps(self):
-        path_positions = []
-        row, col = self.agent_pos
-        # print("📍 A* path steps:")
-        for i, action in enumerate(self.astar_path):
-            dr, dc = DIRECTION[action]
-            row += dr
-            col += dc
-            path_positions.append((row, col))
-            # print(f"Step {i}: action {action} -> position ({row}, {col})")
-        return path_positions
-    
-    # this func - inital the first V(0) rewards 
-    # def initialize_reward_map(self):
-    #     # make a all map empty
-    #     reward_map = [[0 for _ in range(self.cols)] for _ in range(self.rows)]
-    #     # for faster search
-    #     path_set = set(self.path_positions)
-
-    #     for i in range(self.rows):
-    #         for j in range(self.cols):
-    #             if self.map[i][j] == WALL:
-    #                  # if it is a wall so i dont eant the agaent to go there so - reward infinte
-    #                 reward_map[i][j] = WALL_REWARD
-    #             elif (i, j) in path_set:
-    #                 # if this cell is part of the A* path-big reward
-    #                 reward_map[i][j] = A_STAR_REWARD
-    #             else:
-    #                 reward_map[i][j] = DEFAULT_REWARD
-    #     return reward_map
-    
-    def initialize_reward_map(self):
-        reward_map = [[DEFAULT_REWARD for _ in range(self.cols)] for _ in range(self.rows)]
-
-        for r in range(self.rows):
-            for c in range(self.cols):
-                if self.map[r][c] == WALL:
-                    reward_map[r][c] = WALL_REWARD
-
-        for i, (r, c) in enumerate(self.path_positions):
-            reward_map[r][c] = A_STAR_REWARD - i  # 100, 99, 98...
-
-        return reward_map
+    def create_sol_policy(self, new_solution, sol_nodes):
+        V = {}
+        pai = {}
+        for i, game in enumerate(sol_nodes[:-1]):
+            current_state = game.get_current_state()
+            hashable_state = tuple(current_state[0].flatten())
+            V[hashable_state] = i
+            pai[hashable_state] = new_solution[i]
+        final_game = sol_nodes[-1]
+        final_state = final_game.get_current_state()
+        hashable_state = tuple(final_state[0].flatten())
+        V[hashable_state] = len(sol_nodes)
+        pai[hashable_state] = "U"
+        return V, pai
+            
+    def create_reachable_nodes(self, sol_nodes, h = 3):
+        reachable_nodes = []
+        for game in sol_nodes:
+            visited = set()
+            q = deque()
+            q.append((copy.deepcopy(game),0))
+            while q:
+                current_game, depth = q.popleft()
+                if depth >= h:
+                    break
+                current_state = current_game.get_current_state()
+                map = current_state[0]
+                hashable_map = tuple(map.flatten())
+                if hashable_map in visited:
+                    continue
+                visited.add(hashable_map)
+                reachable_nodes.append(current_game)
+                for action in ["U", "L", "R", "D"]:
+                    next_state = copy.deepcopy(current_game)
+                    # בעצם מכריח את הפונקציה לעבוד באופן דטרמינסטי כדי שיוכל להשתמש בה
+                    next_state._chosen_action_prob = forced_actions
+                    next_state.submit_next_action(action)
+                    q.append((next_state, depth + 1))
+        return reachable_nodes
+            
 
 
+    def create_sol_nodes(self, new_solution):
+        copied_game = copy.deepcopy(self.original_game)
+        sol_nodes = []
+        sol_nodes.append(copy.deepcopy(self.original_game))
+        copied_game._chosen_action_prob = forced_actions
+        for action in new_solution:
+            copied_game.submit_next_action(action)
+            sol_nodes.append(copy.deepcopy(copied_game))
+        return sol_nodes
+        
 
-
-    # A*
-    def compute_astar_path(self):
-        current_map, _, _, _, _ = self.original_game.get_current_state()
-        problem = PressurePlateProblem(current_map)
-        result_node, _ = astar_search(problem)
-        if result_node is None:
-            # print("\u274C No A* path found.")
-            return []
-        path_nodes = list(reversed(result_node.path()))
-        return [node.action for node in path_nodes if node.action is not None]
-
-    # do the policy & return the best action
-    # def choose_next_action(self, state):
-    #     _, _, _, done, _ = state
-    #     if done:
-    #         # print("✅ Game is done. No further actions.")
-    #         raise SystemExit()  # או return 'U' אם חייבים להחזיר פעולה
-
-    #     if self.step_counter < len(self.astar_path):
-    #         action = self.astar_path[self.step_counter]
-    #         # print(f"Step {self.step_counter}: forced action {action}")
-    #         self.step_counter += 1
-    #         return action
-    #     else:
-    #         # print(f"⚠️ Reached end of path at step {self.step_counter}.")
-    #         return 'U'  # פעולה נייטרלית שלא מקדמת
-
-    def get_transition_distribution(self, pos, action):
-        """Return a dict mapping possible next positions to their probabilities."""
-        row, col = pos
-        directions = ['U', 'D', 'L', 'R']
-        probs = self.original_game.get_model()['chosen_action_prob'][action]
-        dist = {}
-
-        for dir_label, prob in zip(directions, probs):
-            dr, dc = DIRECTION[dir_label]
-            new_r, new_c = row + dr, col + dc
-            if 0 <= new_r < self.rows and 0 <= new_c < self.cols:
-                dist[(new_r, new_c)] = dist.get((new_r, new_c), 0) + prob
-            else:
-                dist[(row, col)] = dist.get((row, col), 0) + prob
-
-        return dist
-
-    def value(self, pos, depth):
-        """Recursive value iteration with limited depth."""
-        if depth == 0:
-            r, c = pos
-            return self.reward_map[r][c]
-
-        best = float('-inf')
-        for action in DIRECTION:
-            expected = 0
-            transitions = self.get_transition_distribution(pos, action)
-            for (r, c), prob in transitions.items():
-                reward = self.reward_map[r][c]
-                fut = self.value((r, c), depth - 1)
-                expected += prob * (reward + DISCOUNT * fut)
-            best = max(best, expected)
-
-        return best
 
     def choose_next_action(self, state):
-        _, agent_pos, _, done, _ = state
-        if done:
-            raise SystemExit()
+        """Choose next action for a pressure plate game given the current state of the game.
+        """
+        hashable_state = tuple(state[0].flatten())
+        # reachable_states = self.limited_bfs(state)
+        # self.V, self.pai = self.value_iteration(reachable_states=reachable_states)
 
-        best_action = None
-        best_value = float('-inf')
+        if hashable_state in self.pai_solution:
+            return self.pai_solution[hashable_state]
+        if hashable_state in self.pai:
+            return self.pai[hashable_state]
+        return np.random.choice(["U", "R", "D", "L"])
 
-        for action in DIRECTION:
-            expected = 0
-            transitions = self.get_transition_distribution(agent_pos, action)
-            for (r, c), prob in transitions.items():
-                reward = self.reward_map[r][c]
-                fut = self.value((r, c), MAX_DEPTH - 1)
-                expected += prob * (reward + DISCOUNT * fut)
+        # if hashable_state in self.pai:
+        #     return self.pai[hashable_state]
+        # return np.random.choice(["U", "R", "D", "L"])
 
-            if expected > best_value:
-                best_value = expected
-                best_action = action
+        # return np.random.choice(["U", "R", "D", "L"])
 
-        return best_action
+    def value_iteration(self, gamma=0.9, epochs=15, reachable_states=None):
+        reachable = [game.get_current_state() for game in reachable_states]
+        V = {}
+        pai = {}
+        for state in reachable:
+            hashable_state = tuple(state[0].flatten())
+            V[hashable_state] = self.init_V(state)
+            pai[hashable_state] = "U"
+        for i in range(epochs):
+            new_V = {}
+            for state in reachable:
+                hashable_state = tuple(state[0].flatten())
+                best_value = -np.inf
+                best_action = "U"
+                for action in ["U", "L", "R", "D"]:
+                    E_V = 0.0
+                    map, agent_pos, steps, done, successful = state
+                    copied_game = copy.deepcopy(self.original_game)
+                    copied_game._agent_pos = agent_pos
+                    copied_game._steps = steps
+                    copied_game._done = done
+                    copied_game._successful = successful
+                    copied_game._map = map.copy()
+                    for i, real_action in enumerate(["U", "L", "R", "D"]):
+                        p = copied_game._chosen_action_prob[action][i]
+                        copied_game2 = copy.deepcopy(copied_game)
+                        copied_game2._chosen_action_prob = forced_actions
+                        copied_game2.submit_next_action(action)
+                        next_state = copied_game2.get_current_state()
+                        hashable_next_state = tuple(next_state[0].flatten())
+                        V_next = V.get(hashable_next_state, 0)
+                        # R = get_R(copied_game2)
+                        R = copied_game2.get_current_reward()
+                        R += self.get_R(next_state)
+                        E_V += p * (R + gamma * V_next)
+                    if E_V > best_value:
+                        best_value = E_V
+                        best_action = action
+                new_V[hashable_state] = best_value
+                pai[hashable_state] = best_action
+            V = new_V
+        return V, pai
 
+
+    def get_R(self, state):
+        return 0
+
+    def init_V(self, state):
+        agent_pos = state[1]
+        distance = abs(agent_pos[0] - self.goal[0]) + abs(agent_pos[1] - self.goal[1])
+        return -distance
+
+    def limited_bfs(self, state, h=3):
+        reachable_states = []
+        q = deque()
+        visited = set()
+        map, agent_pos, steps, done, successful = state
+        copied_game = copy.deepcopy(self.original_game)
+        copied_game._agent_pos = agent_pos
+        copied_game._steps = steps
+        copied_game._done = done
+        copied_game._successful = successful
+        copied_game._map = map.copy()
+        q.append((copied_game, 0))
+        while q:
+            current_game, depth = q.popleft()
+            if depth >= h:
+                break
+            map = current_game.get_current_state()[0]
+            hashable_map = tuple(map.flatten())
+            if hashable_map in visited:
+                continue
+            visited.add(hashable_map)
+            reachable_states.append(current_game)
+            for action in ["U", "L", "R", "D"]:
+                next_state = copy.deepcopy(current_game)
+                next_state._chosen_action_prob = forced_actions
+                next_state.submit_next_action(action)
+                q.append((next_state, depth + 1))
+        return reachable_states
