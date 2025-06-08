@@ -45,20 +45,20 @@ class Controller:
         # print(len(reachable_states))
         self.V, self.pai = self.value_iteration(reachable_states=reachable_states)
 
-    def create_sol_policy(self, new_solution, sol_nodes):
-        V = {}
-        pai = {}
-        for i, game in enumerate(sol_nodes[:-1]):
-            current_state = game.get_current_state()
-            hashable_state = tuple(current_state[0].flatten())
-            V[hashable_state] = i
-            pai[hashable_state] = new_solution[i]
-        final_game = sol_nodes[-1]
-        final_state = final_game.get_current_state()
-        hashable_state = tuple(final_state[0].flatten())
-        V[hashable_state] = len(sol_nodes)
-        pai[hashable_state] = "U"
-        return V, pai
+    # def create_sol_policy(self, new_solution, sol_nodes):
+    #     V = {}
+    #     pai = {}
+    #     for i, game in enumerate(sol_nodes[:-1]):
+    #         current_state = game.get_current_state()
+    #         hashable_state = tuple(current_state[0].flatten())
+    #         V[hashable_state] = i
+    #         pai[hashable_state] = new_solution[i]
+    #     final_game = sol_nodes[-1]
+    #     final_state = final_game.get_current_state()
+    #     hashable_state = tuple(final_state[0].flatten())
+    #     V[hashable_state] = len(sol_nodes)
+    #     pai[hashable_state] = "U"
+    #     return V, pai
             
     def create_reachable_nodes(self, sol_nodes, h = 3):
         reachable_nodes = []

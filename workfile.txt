@@ -26,3 +26,4 @@ chosse next action -
 work file:
 1 - keep the A* path & change the letters , U to D , and back
 2 - keep the game objects after every step of the actions in  A* : in a dterminstic enironmnet
+3 - create the right policy & v table of the dterminstic world
