@@ -22,3 +22,7 @@ chosse next action -
 1 from the opti path 
 2 - your sons 
 3- random
+
+work file:
+1 - keep the A* path & change the letters , U to D , and back
+2 - keep the game objects after every step of the actions in  A* : in a dterminstic enironmnet
