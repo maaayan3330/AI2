@@ -13,6 +13,16 @@ AGENT_ON_GOAL = 3
 WALL = 99
 FLOOR = 98
 
+DISCOUNT = 0.9
+EPOCHS = 15
+ACTIONS = ["U", "L", "R", "D"]
+
+DETERMINSITIC_PROBABLITIES = {
+                        'U': [1, 0, 0, 0],
+                        'L': [0, 1, 0, 0],
+                        'R': [0, 0, 1, 0],
+                        'D': [0, 0, 0, 1]
+        }
 
 DIRECTION = {
     'U': (-1, 0),
@@ -34,19 +44,28 @@ class Controller:
         self.astar_path = self.compute_Astar_path()
         print("🧭 Forced A* path:", self.astar_path)
         # get the obejects to any step in the A* path - extra check in case it emmpty
-        if self.astar_path:
-            self.a_star_game_states = self.create_game_object_by_action(self.astar_path)
-        else:
-            self.a_star_game_states = []
+        self.a_star_game_states = self.create_game_object_by_action(self.astar_path)
+        # print(self.a_star_game_states)
+        # Generate policy from A* path
+        self.v_solution, self.pai_solution = self.create_policy_valueTable_for_Astar(self.astar_path, self.a_star_game_states)
+        # print(self.v_solution)
+        # print(self.pai_solution)
+        # Expand reachable states from A* steps
+        reachable_states = self.collect_childs_states(self.a_star_game_states, max_depth=3)
+        # print(reachable_states)
+        # Run value iteration on reachable space
+        self.V, self.pai = self.value_iteration(reachable_states)
 
+   
 
     # In this func - I restore the path of A* : My goal is to force the agent to walk in this path
     def compute_Astar_path(self):
         current_map, _, _, _, _ = self.original_game.get_current_state()
         problem = PressurePlateProblem(current_map)
-        result_node, _ = astar_search(problem)
-        if result_node is None:
+        result = astar_search(problem)
+        if result is None:
             return []
+        result_node , _ = result
         path_nodes = list(reversed(result_node.path()))
         original_actions = [node.action for node in path_nodes if node.action is not None]
         corrected_actions = [self.correct_direction(a) for a in original_actions]
@@ -66,24 +85,19 @@ class Controller:
         forced_games = []
         # becuase I dont want to destroy the original game
         current_game = copy.deepcopy(self.original_game)
+        forced_games.append(current_game)
         # now i will run the all action like thay suppose to be 
+        # Force the action by setting its probability to 100% for itself
+        current_game._chosen_action_prob = DETERMINSITIC_PROBABLITIES
         for action in a_star_path:
-            # Force the action by setting its probability to 100% for itself
-            original_probs = current_game._chosen_action_prob[action]
-            current_game._chosen_action_prob[action] = [0, 0, 0, 0]
-            idx = {'U': 0, 'L': 1, 'R': 2, 'D': 3}[action]
-            current_game._chosen_action_prob[action][idx] = 1.0
-            
             # Submit action (now forced)
             current_game.submit_next_action(action)
-
             # Save the game copy after the move
             forced_games.append(copy.deepcopy(current_game))
 
-            # Restore original probabilities to avoid corrupting model
-            current_game._chosen_action_prob[action] = original_probs
-
         return forced_games
+
+
 
     # In this func - I want to make V and policy based on the A* path : the point is that I know allreday what is the best policy so I build it
     # the goal - is that I can know what I want to append in my game and try to force my agent    
@@ -111,7 +125,7 @@ class Controller:
 
     # In this func - I want to do bfs and create 3 childs to every step in the A* path
     # the goal - to keep track if the agent split out side
-    def collect_reachable_states(self, base_games, max_depth=3):
+    def collect_childs_states(self, base_games, max_depth=3):
         child_nodes = []
 
         for base_game in base_games:
@@ -140,9 +154,7 @@ class Controller:
                     next_game = copy.deepcopy(game_state)
 
                     # Force deterministic behavior
-                    idx = {'U': 0, 'L': 1, 'R': 2, 'D': 3}[action]
-                    next_game._chosen_action_prob[action] = [0.0, 0.0, 0.0, 0.0]
-                    next_game._chosen_action_prob[action][idx] = 1.0
+                    next_game._chosen_action_prob = DETERMINSITIC_PROBABLITIES.copy()
 
                     # Apply the action and enqueue
                     next_game.submit_next_action(action)
@@ -150,10 +162,56 @@ class Controller:
 
         return child_nodes
 
-    
+
    
+    def value_iteration(self, reachable_states):
+        V = {}
+        pai = {}
+        reachable = [game.get_current_state() for game in reachable_states]
+
+        for state in reachable:
+            V[tuple(state[0].flatten())] = 0
+            pai[tuple(state[0].flatten())] = 'U'
+
+        for _ in range(EPOCHS):
+            new_V = {}
+            for state in reachable:
+                best_val = -np.inf
+                best_act = 'U'
+                for action in ACTIONS:
+                    expected_val = 0.0
+                    base = copy.deepcopy(self.original_game)
+                    base._map = state[0].copy()
+                    base._agent_pos = state[1]
+                    base._steps = state[2]
+                    base._done = state[3]
+                    base._successful = state[4]
+
+                    for i, act in enumerate(ACTIONS):
+                        p = base._chosen_action_prob[action][i]
+                        sim_game = copy.deepcopy(base)
+                        sim_game._chosen_action_prob = DETERMINSITIC_PROBABLITIES
+                        sim_game.submit_next_action(action)
+                        next_state = sim_game.get_current_state()
+                        h_next = tuple(next_state[0].flatten())
+                        reward = sim_game.get_current_reward()
+                        expected_val += p * (reward + DISCOUNT * V.get(h_next, 0))
+
+                    if expected_val > best_val:
+                        best_val = expected_val
+                        best_act = action
+
+                new_V[tuple(state[0].flatten())] = best_val
+                pai[tuple(state[0].flatten())] = best_act
+
+            V = new_V
+
+        return V, pai
+
     def choose_next_action(self, state):
-        """Choose next action for a pressure plate game given the current state of the game.
-        """
-        return np.random.choice(["U", "R", "D", "L"])
-   
+        h_state = tuple(state[0].flatten())
+        if h_state in self.pai_solution:
+            return self.pai_solution[h_state]
+        if h_state in self.pai:
+            return self.pai[h_state]
+        return np.random.choice(["U","R","D","L"])

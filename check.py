@@ -63,8 +63,8 @@ def main():
     debug_mode = True
     game = pressure_plate.create_pressure_plate_game((100, problem1, example2, debug_mode))
     solve(game)
-    # game2 = pressure_plate.create_pressure_plate_game((200, problem2, example, debug_mode))
-    # solve(game2)
+    game2 = pressure_plate.create_pressure_plate_game((200, problem2, example, debug_mode))
+    solve(game2)
 
 
 if __name__ == "__main__":
