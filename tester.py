@@ -269,7 +269,7 @@ def solve_game(ind, problem, example, debug_mode):
     solve(game)
     end = time.time()
     print("###############################################")
-    print(f"Solved problem{ind} in {end - start:.3f} seconds")
+    print(f"Solved problem{ind + 1} in {end - start:.3f} seconds")
     print("###############################################")
     
 
@@ -279,7 +279,7 @@ def main():
         # for row in problem:
         # print(row)
         print("#########################################################################################################")
-        print(f"###################################### problem{ind} ###################################################")
+        print(f"###################################### problem{ind + 1} ###################################################")
         print("#########################################################################################################")
         solve_game(ind, problem, example, debug_mode=False)
         solve_game(ind, problem, example2, debug_mode=False)

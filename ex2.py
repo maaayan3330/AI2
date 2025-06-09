@@ -154,7 +154,7 @@ class Controller:
                     next_game = copy.deepcopy(game_state)
 
                     # Force deterministic behavior
-                    next_game._chosen_action_prob = DETERMINSITIC_PROBABLITIES.copy()
+                    next_game._chosen_action_prob = DETERMINSITIC_PROBABLITIES
 
                     # Apply the action and enqueue
                     next_game.submit_next_action(action)
