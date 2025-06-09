@@ -60,30 +60,30 @@ class Controller:
     #     pai[hashable_state] = "U"
     #     return V, pai
             
-    def create_reachable_nodes(self, sol_nodes, h = 3):
-        reachable_nodes = []
-        for game in sol_nodes:
-            visited = set()
-            q = deque()
-            q.append((copy.deepcopy(game),0))
-            while q:
-                current_game, depth = q.popleft()
-                if depth >= h:
-                    break
-                current_state = current_game.get_current_state()
-                map = current_state[0]
-                hashable_map = tuple(map.flatten())
-                if hashable_map in visited:
-                    continue
-                visited.add(hashable_map)
-                reachable_nodes.append(current_game)
-                for action in ["U", "L", "R", "D"]:
-                    next_state = copy.deepcopy(current_game)
-                    # בעצם מכריח את הפונקציה לעבוד באופן דטרמינסטי כדי שיוכל להשתמש בה
-                    next_state._chosen_action_prob = forced_actions
-                    next_state.submit_next_action(action)
-                    q.append((next_state, depth + 1))
-        return reachable_nodes
+    # def create_reachable_nodes(self, sol_nodes, h = 3):
+    #     reachable_nodes = []
+    #     for game in sol_nodes:
+    #         visited = set()
+    #         q = deque()
+    #         q.append((copy.deepcopy(game),0))
+    #         while q:
+    #             current_game, depth = q.popleft()
+    #             if depth >= h:
+    #                 break
+    #             current_state = current_game.get_current_state()
+    #             map = current_state[0]
+    #             hashable_map = tuple(map.flatten())
+    #             if hashable_map in visited:
+    #                 continue
+    #             visited.add(hashable_map)
+    #             reachable_nodes.append(current_game)
+    #             for action in ["U", "L", "R", "D"]:
+    #                 next_state = copy.deepcopy(current_game)
+    #                 # בעצם מכריח את הפונקציה לעבוד באופן דטרמינסטי כדי שיוכל להשתמש בה
+    #                 next_state._chosen_action_prob = forced_actions
+    #                 next_state.submit_next_action(action)
+    #                 q.append((next_state, depth + 1))
+    #     return reachable_nodes
             
 
 

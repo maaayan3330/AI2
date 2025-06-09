@@ -14,7 +14,6 @@ WALL = 99
 FLOOR = 98
 
 
-
 DIRECTION = {
     'U': (-1, 0),
     'D': (1, 0),
