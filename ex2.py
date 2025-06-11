@@ -42,19 +42,19 @@ class Controller:
         self.map, self.agent_pos, _, _, _ = self.original_game.get_current_state()
         # Get the opt path from A*
         self.astar_path = self.compute_Astar_path()
-        print("🧭 Forced A* path:", self.astar_path)
+        # print("🧭 Forced A* path:", self.astar_path)
         # get the obejects to any step in the A* path - extra check in case it emmpty
         self.a_star_game_states = self.create_game_object_by_action(self.astar_path)
         # print(self.a_star_game_states)
         # Generate policy from A* path
-        self.v_solution, self.pai_solution = self.create_policy_valueTable_for_Astar(self.astar_path, self.a_star_game_states)
+        self.policy_solution = self.create_policy_for_Astar(self.astar_path, self.a_star_game_states)
         # print(self.v_solution)
         # print(self.pai_solution)
         # Expand reachable states from A* steps
         reachable_states = self.collect_childs_states(self.a_star_game_states, max_depth=3)
         # print(reachable_states)
         # Run value iteration on reachable space
-        self.V, self.pai = self.value_iteration(reachable_states)
+        self.V, self.policy = self.value_iteration(reachable_states)
 
    
 
@@ -101,9 +101,8 @@ class Controller:
 
     # In this func - I want to make V and policy based on the A* path : the point is that I know allreday what is the best policy so I build it
     # the goal - is that I can know what I want to append in my game and try to force my agent    
-    def create_policy_valueTable_for_Astar(self , astar_path, a_star_game_states):
+    def create_policy_for_Astar(self , astar_path, a_star_game_states):
         # create v table of values + policy
-        v_table_for_Astar = {}  # v(map) = int
         policy_for_Astar = {}   # policy(map) = action
         # i want to go all over the games - give more reward in up order for the states
         total_steps = len(a_star_game_states)
@@ -115,13 +114,11 @@ class Controller:
 
             # Assign max value to final state, else assign descending values
             if idx == total_steps - 1:
-                v_table_for_Astar[state_key] = total_steps
                 policy_for_Astar[state_key] = 'U'  # no action needed
             else:
-                v_table_for_Astar[state_key] = idx
                 policy_for_Astar[state_key] = astar_path[idx]
 
-        return v_table_for_Astar, policy_for_Astar
+        return policy_for_Astar
 
     # In this func - I want to do bfs and create 3 childs to every step in the A* path
     # the goal - to keep track if the agent split out side
@@ -158,6 +155,7 @@ class Controller:
 
                     # Apply the action and enqueue
                     next_game.submit_next_action(action)
+                    
                     queue.append((next_game, depth + 1))
 
         return child_nodes
@@ -201,6 +199,7 @@ class Controller:
                         best_val = expected_val
                         best_act = action
 
+
                 new_V[tuple(state[0].flatten())] = best_val
                 pai[tuple(state[0].flatten())] = best_act
 
@@ -208,10 +207,15 @@ class Controller:
 
         return V, pai
 
+
     def choose_next_action(self, state):
         h_state = tuple(state[0].flatten())
-        if h_state in self.pai_solution:
-            return self.pai_solution[h_state]
-        if h_state in self.pai:
-            return self.pai[h_state]
+        if h_state in self.policy_solution:
+            # print(f"on optimal path - {self.pai_solution[h_state]}")
+            return self.policy_solution[h_state]
+        if h_state in self.policy:
+            # print(f"on a child of optimal path - {self.pai[h_state]}")
+            return self.policy[h_state]
+        # print("random")
         return np.random.choice(["U","R","D","L"])
+
