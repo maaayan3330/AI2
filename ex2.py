@@ -47,7 +47,7 @@ class Controller:
         self.a_star_game_states = self.create_game_object_by_action(self.astar_path)
         # print(self.a_star_game_states)
         # Generate policy from A* path
-        self.policy_solution = self.create_policy_for_Astar(self.astar_path, self.a_star_game_states)
+        self.v_solution, self.policy_solution = self.create_policy_valueTable_for_Astar(self.astar_path, self.a_star_game_states)
         # print(self.v_solution)
         # print(self.pai_solution)
         # Expand reachable states from A* steps
@@ -101,8 +101,9 @@ class Controller:
 
     # In this func - I want to make V and policy based on the A* path : the point is that I know allreday what is the best policy so I build it
     # the goal - is that I can know what I want to append in my game and try to force my agent    
-    def create_policy_for_Astar(self , astar_path, a_star_game_states):
+    def create_policy_valueTable_for_Astar(self , astar_path, a_star_game_states):
         # create v table of values + policy
+        v_table_for_Astar = {}  # v(map) = int
         policy_for_Astar = {}   # policy(map) = action
         # i want to go all over the games - give more reward in up order for the states
         total_steps = len(a_star_game_states)
@@ -114,11 +115,13 @@ class Controller:
 
             # Assign max value to final state, else assign descending values
             if idx == total_steps - 1:
+                v_table_for_Astar[state_key] = total_steps
                 policy_for_Astar[state_key] = 'U'  # no action needed
             else:
+                v_table_for_Astar[state_key] = idx
                 policy_for_Astar[state_key] = astar_path[idx]
 
-        return policy_for_Astar
+        return v_table_for_Astar, policy_for_Astar
 
     # In this func - I want to do bfs and create 3 childs to every step in the A* path
     # the goal - to keep track if the agent split out side
@@ -218,4 +221,3 @@ class Controller:
             return self.policy[h_state]
         # print("random")
         return np.random.choice(["U","R","D","L"])
-

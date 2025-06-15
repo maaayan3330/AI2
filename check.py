@@ -25,7 +25,6 @@ example = {'chosen_action_prob': {'U': [0.9, 0.05, 0.05, 0], 'L': [0.1, 0.8, 0.0
 
 example2 = {'chosen_action_prob': {'U': [0.6, 0.05, 0.05, 0.3], 'L': [0, 0.9, 0.075, 0.025],
                                    'R': [0.25, 0.2, 0.3, 0.25], 'D': [0.05, 0.128, 0.15, 0.672]},
-                                   # i change 1.38 to 1.28
             'finished_reward': 200,
             'opening_door_reward': {10: -3, 11: 2, 12: 15, 13: -6, 14: 3, 15: -10, 16: 17, 17: 0, 18: 1, 19: -2},
             'step_punishment': -2,
@@ -39,8 +38,6 @@ problem1 = (
     (99,20,98,98,1 ,99),
     (99,99,99,99,99,99),
 )
-
-
 
 problem2 = (
     (99,99,99,99,99,99,99,99,99,99,99,99,99,99,99),
@@ -59,6 +56,7 @@ problem2 = (
     (99,98,43,98,98,98,98,98,98,99,21,98,98,1 ,99),
     (99,99,99,99,99,99,99,99,99,99,99,99,99,99,99),)
 
+
 def main():
     debug_mode = True
     game = pressure_plate.create_pressure_plate_game((100, problem1, example2, debug_mode))
@@ -69,7 +67,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
-
-
-
