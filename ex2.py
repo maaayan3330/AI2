@@ -42,6 +42,8 @@ class Controller:
         self.map, self.agent_pos, _, _, _ = self.original_game.get_current_state()
         # Get the opt path from A*
         self.astar_path = self.compute_Astar_path()
+        #####################
+        ####################
         # print("🧭 Forced A* path:", self.astar_path)
         # get the obejects to any step in the A* path - extra check in case it emmpty
         self.a_star_game_states = self.create_game_object_by_action(self.astar_path)
@@ -209,7 +211,7 @@ class Controller:
             V = new_V
 
         return V, pai
-
+    
 
     def choose_next_action(self, state):
         h_state = tuple(state[0].flatten())

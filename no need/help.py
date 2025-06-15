@@ -45,57 +45,57 @@ class Controller:
         # print(len(reachable_states))
         self.V, self.pai = self.value_iteration(reachable_states=reachable_states)
 
-    # def create_sol_policy(self, new_solution, sol_nodes):
-    #     V = {}
-    #     pai = {}
-    #     for i, game in enumerate(sol_nodes[:-1]):
-    #         current_state = game.get_current_state()
-    #         hashable_state = tuple(current_state[0].flatten())
-    #         V[hashable_state] = i
-    #         pai[hashable_state] = new_solution[i]
-    #     final_game = sol_nodes[-1]
-    #     final_state = final_game.get_current_state()
-    #     hashable_state = tuple(final_state[0].flatten())
-    #     V[hashable_state] = len(sol_nodes)
-    #     pai[hashable_state] = "U"
-    #     return V, pai
+    def create_sol_policy(self, new_solution, sol_nodes):
+        V = {}
+        pai = {}
+        for i, game in enumerate(sol_nodes[:-1]):
+            current_state = game.get_current_state()
+            hashable_state = tuple(current_state[0].flatten())
+            V[hashable_state] = i
+            pai[hashable_state] = new_solution[i]
+        final_game = sol_nodes[-1]
+        final_state = final_game.get_current_state()
+        hashable_state = tuple(final_state[0].flatten())
+        V[hashable_state] = len(sol_nodes)
+        pai[hashable_state] = "U"
+        return V, pai
             
-    # def create_reachable_nodes(self, sol_nodes, h = 3):
-    #     reachable_nodes = []
-    #     for game in sol_nodes:
-    #         visited = set()
-    #         q = deque()
-    #         q.append((copy.deepcopy(game),0))
-    #         while q:
-    #             current_game, depth = q.popleft()
-    #             if depth >= h:
-    #                 break
-    #             current_state = current_game.get_current_state()
-    #             map = current_state[0]
-    #             hashable_map = tuple(map.flatten())
-    #             if hashable_map in visited:
-    #                 continue
-    #             visited.add(hashable_map)
-    #             reachable_nodes.append(current_game)
-    #             for action in ["U", "L", "R", "D"]:
-    #                 next_state = copy.deepcopy(current_game)
-    #                 # בעצם מכריח את הפונקציה לעבוד באופן דטרמינסטי כדי שיוכל להשתמש בה
-    #                 next_state._chosen_action_prob = forced_actions
-    #                 next_state.submit_next_action(action)
-    #                 q.append((next_state, depth + 1))
-    #     return reachable_nodes
+    def create_reachable_nodes(self, sol_nodes, h = 3):
+        reachable_nodes = []
+        for game in sol_nodes:
+            visited = set()
+            q = deque()
+            q.append((copy.deepcopy(game),0))
+            while q:
+                current_game, depth = q.popleft()
+                if depth >= h:
+                    break
+                current_state = current_game.get_current_state()
+                map = current_state[0]
+                hashable_map = tuple(map.flatten())
+                if hashable_map in visited:
+                    continue
+                visited.add(hashable_map)
+                reachable_nodes.append(current_game)
+                for action in ["U", "L", "R", "D"]:
+                    next_state = copy.deepcopy(current_game)
+                    # בעצם מכריח את הפונקציה לעבוד באופן דטרמינסטי כדי שיוכל להשתמש בה
+                    next_state._chosen_action_prob = forced_actions
+                    next_state.submit_next_action(action)
+                    q.append((next_state, depth + 1))
+        return reachable_nodes
             
 
 
-    # def create_sol_nodes(self, new_solution):
-    #     copied_game = copy.deepcopy(self.original_game)
-    #     sol_nodes = []
-    #     sol_nodes.append(copy.deepcopy(self.original_game))
-    #     copied_game._chosen_action_prob = forced_actions
-    #     for action in new_solution:
-    #         copied_game.submit_next_action(action)
-    #         sol_nodes.append(copy.deepcopy(copied_game))
-    #     return sol_nodes
+    def create_sol_nodes(self, new_solution):
+        copied_game = copy.deepcopy(self.original_game)
+        sol_nodes = []
+        sol_nodes.append(copy.deepcopy(self.original_game))
+        copied_game._chosen_action_prob = forced_actions
+        for action in new_solution:
+            copied_game.submit_next_action(action)
+            sol_nodes.append(copy.deepcopy(copied_game))
+        return sol_nodes
         
 
 
