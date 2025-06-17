@@ -51,6 +51,11 @@ class Controller:
         # Compute A* path using helper method and correct directions
         self.astar_path = self.compute_Astar_path()
         self.solution_exist = len(self.astar_path) > 0
+
+        #############################################################
+        self.risky_keys_cache = {}
+        #######################################
+
         # Create deterministic game state sequence along A* path
         self.a_star_game_states = self.create_game_object_by_action(self.astar_path)
         # Create policy and value tables based on A* path
@@ -62,6 +67,7 @@ class Controller:
         childs_states = self.collect_childs_states(self.a_star_game_states)
         # Run value iteration on reachable states
         self.V, self.policy = self.value_iteration(childs_states)
+        
 
     # In this func - I restore the path of A* : My goal is to force the agent to walk in this path
     def compute_Astar_path(self):
@@ -218,100 +224,55 @@ class Controller:
         return game
 
     # ----------------------- VI - functions -----------------------------
-
+    
+    # this func is to try make the agent even more to not get out from the path
     def add_reward(self, state):
         R = 0
         hashable_state = tuple(state[0].flatten())
+        map = state[0]
+        # if it a good step in A* -> add reward
         if hashable_state in self.policy_sol:
             R += GOOD_REWARD
-        map = state[0]
-        for door_number in self.usefull_key:
-            positions = np.argwhere(map == door_number)
-            for i, j in positions:
-                walls = 0
-                if i > 0 and map[i-1, j] == WALL: walls += 1
-                if i < map.shape[0]-1 and map[i+1, j] == WALL: walls += 1
-                if j > 0 and map[i, j-1] == WALL: walls += 1
-                if j < map.shape[1]-1 and map[i, j+1] == WALL: walls += 1
-                if walls >= 2:
-                    R -= BAD_REWARD
+        # if it is a key that is usefull -> check we didnt stack him 
+        for key in self.usefull_key:
+            R += self.penalty_if_blocked(map, key)
+
+        for door_number in range(40, 50):
+            corresponding_key = door_number - 30
+            if corresponding_key not in self.usefull_key:
+                R += self.penalty_if_blocked(map, door_number, penalty=BAD_REWARD // 2)
+
+
+
         return R
+
+    def penalty_if_blocked(self, map, key_s, penalty=BAD_REWARD):
+        key = (key_s, map.shape)
+        if key in self.risky_keys_cache:
+            return -penalty if self.risky_keys_cache[key] else 0
+
+        positions = np.argwhere(map == key_s)
+        for i, j in positions:
+            blocked = 0
+            for dx, dy in [(-1, 0), (1, 0), (0, -1), (0, 1)]:
+                ni, nj = i + dx, j + dy
+                if not (0 <= ni < map.shape[0] and 0 <= nj < map.shape[1]):
+                    continue
+                neighbor = map[ni, nj]
+                if neighbor == WALL or (40 <= neighbor < 50 and (neighbor - 30) not in self.usefull_key):
+                    blocked += 1
+                if blocked >= 2:
+                    self.risky_keys_cache[key] = True
+                    return -penalty
+
+        self.risky_keys_cache[key] = False
+        return 0
+
 
     def init_v_table(self, state):
         agent_pos = state[1]
         return -abs(agent_pos[0] - self.goal[0]) - abs(agent_pos[1] - self.goal[1])
 
-    
-    # def choose_next_action(self, state):
-    #     h_state = tuple(state[0].flatten())
-
-    #     if h_state in self.policy_sol:
-    #         return self.policy_sol[h_state]
-
-    #     if h_state in self.policy:
-    #         return self.policy[h_state]
-
-    #     if not self.solution_exist:
-    #         return self.recover_towards_astar(state)
-
-    #     # נסה לחשב מסלול חדש לגמרי
-    #     current_map = state[0]
-    #     problem = PressurePlateProblem(current_map)
-    #     result = astar_search(problem)
-    #     if result is None:
-    #         self.solution_exist = False
-    #         return self.recover_towards_astar(state)
-
-    #     self.solution_exist = True
-    #     result_node, _ = result
-    #     path_nodes = list(reversed(result_node.path()))
-    #     original_actions = [node.action for node in path_nodes if node.action is not None]
-    #     corrected_actions = [self.correct_direction(a) for a in original_actions]
-    #     sol_nodes = self.create_game_object_by_action(corrected_actions)
-    #     self.policy_solution = self.create_policy_valueTable_for_Astar(corrected_actions, sol_nodes)
-
-    #     if h_state in self.policy_solution:
-    #         return self.policy_solution[h_state]
-    #     if h_state in self.policy:
-    #         return self.policy[h_state]
-
-    #     return self.recover_towards_astar(state)
-
-    # def recover_towards_astar(self, state):
-    #     current_map, agent_pos, *_ = state
-
-    #     # חפש את המצב הכי קרוב במסלול A*
-    #     best_dist = float('inf')
-    #     best_target_map = None
-
-    #     for game in self.a_star_game_states:
-    #         map_astar = game.get_current_state()[0]
-    #         pos_astar = np.argwhere(map_astar == AGENT)
-    #         if len(pos_astar) == 0:
-    #             continue
-    #         pos_astar = tuple(pos_astar[0])
-    #         dist = abs(agent_pos[0] - pos_astar[0]) + abs(agent_pos[1] - pos_astar[1])
-    #         if dist < best_dist:
-    #             best_dist = dist
-    #             best_target_map = map_astar
-
-    #     if best_target_map is None:
-    #         return np.random.choice(ACTIONS)
-
-    #     # חפש פעולה לפי A* למצב הקרוב
-    #     problem = PressurePlateProblem(current_map)
-    #     result = astar_search(problem)
-
-    #     if result is None:
-    #         return np.random.choice(ACTIONS)
-
-    #     result_node, _ = result
-    #     path_nodes = list(reversed(result_node.path()))
-    #     for node in path_nodes:
-    #         if node.action is not None:
-    #             return self.correct_direction(node.action)
-
-    #     return np.random.choice(ACTIONS)
 
     def choose_next_action(self, state):
         h_state = tuple(state[0].flatten())
@@ -327,7 +288,6 @@ class Controller:
 
         min_distance = float('inf')
         closest_state = None
-        closest_index = None
 
         for idx, game in enumerate(self.a_star_game_states):
             _, agent_pos, _, _, _ = game.get_current_state()
@@ -335,7 +295,6 @@ class Controller:
             if dist < min_distance:
                 min_distance = dist
                 closest_state = game
-                closest_index = idx
 
         if closest_state is not None:
             current_map = state[0]

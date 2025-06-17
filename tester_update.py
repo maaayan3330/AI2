@@ -263,7 +263,7 @@ problems = [
 ]
 # problems = [
   
-#     problem4
+#     problem6
 # ]
 
 
@@ -296,8 +296,8 @@ def main():
         print("\n\n")
         print(f"##  problem{ind} ##")
         for example in examples:
-            if (ind == 6 or ind == 8) and example == example2:
-                continue
+            # if (ind == 6 or ind == 8) and example == example2:
+            #     continue
             solve_game(ind, problem, example, debug_mode=False)
 
 if __name__ == "__main__":

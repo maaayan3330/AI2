@@ -1,5 +1,0 @@
-first check - v(0) = 0
-tom 1 - 50 steps : 97 reward
-tom 2 - 61 steps : 251 rewaed
-maayan 1 - 30 steps : 137 reward
-maayan 2 - 74 steps : 225 reward
