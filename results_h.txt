@@ -1,0 +1,199 @@
+##  problem1 ##
+
+	Finished in 25 Steps.
+	Reward result-> 305 
+	Door opened at step True
+Solved problem 1 in 2.852 seconds
+###############################################
+
+	Finished in 41 Steps.
+	Reward result-> 115 
+	Door opened at step True
+Solved problem 1 in 3.110 seconds
+###############################################
+
+	Finished in 39 Steps.
+	Reward result-> 185.5 
+	Door opened at step True
+Solved problem 1 in 2.744 seconds
+###############################################
+
+	Finished in 29 Steps.
+	Reward result-> 149 
+	Door opened at step True
+Solved problem 1 in 2.687 seconds
+###############################################
+
+	Finished in 47 Steps.
+	Reward result-> 7 
+	Door opened at step True
+Solved problem 1 in 2.937 seconds
+###############################################
+
+
+
+##  problem2 ##
+
+	Finished in 69 Steps.
+	Reward result-> 235 
+	Door opened at step True
+Solved problem 2 in 15.302 seconds
+###############################################
+
+	Finished in 107 Steps.
+	Reward result-> -21 
+	Door opened at step True
+Solved problem 2 in 15.054 seconds
+###############################################
+
+	Finished in 172 Steps.
+	Reward result-> 149.0 
+	Door opened at step True
+Solved problem 2 in 20.355 seconds
+###############################################
+
+	Finished in 106 Steps.
+	Reward result-> -154 
+	Door opened at step True
+Solved problem 2 in 15.799 seconds
+###############################################
+
+	Finished in 159 Steps.
+	Reward result-> -550 
+	Door opened at step True
+Solved problem 2 in 18.627 seconds
+###############################################
+
+
+
+##  problem3 ##
+
+	Finished in 18 Steps.
+	Reward result-> 319 
+	Door opened at step True
+Solved problem 3 in 2.618 seconds
+###############################################
+
+	Finished in 76 Steps.
+	Reward result-> 45 
+	Door opened at step True
+Solved problem 3 in 2.798 seconds
+###############################################
+
+	Finished in 38 Steps.
+	Reward result-> 186.0 
+	Door opened at step True
+Solved problem 3 in 2.626 seconds
+###############################################
+
+	Finished in 33 Steps.
+	Reward result-> 133 
+	Door opened at step True
+Solved problem 3 in 2.684 seconds
+###############################################
+
+	Finished in 63 Steps.
+	Reward result-> -73 
+	Door opened at step True
+Solved problem 3 in 2.612 seconds
+###############################################
+
+
+
+##  problem4 ##
+
+	Finished in 27 Steps.
+	Reward result-> 303 
+	Door opened at step True
+Solved problem 4 in 1.969 seconds
+###############################################
+
+	Finished in 27 Steps.
+	Reward result-> 148 
+	Door opened at step True
+Solved problem 4 in 1.991 seconds
+###############################################
+
+	Finished in 46 Steps.
+	Reward result-> 177.0 
+	Door opened at step True
+Solved problem 4 in 1.985 seconds
+###############################################
+
+	Finished in 21 Steps.
+	Reward result-> 181 
+	Door opened at step True
+Solved problem 4 in 1.971 seconds
+###############################################
+
+	Finished in 22 Steps.
+	Reward result-> 155 
+	Door opened at step True
+Solved problem 4 in 1.932 seconds
+###############################################
+
+
+
+##  problem5 ##
+
+	Finished in 53 Steps.
+	Reward result-> 260 
+	Door opened at step True
+Solved problem 5 in 8.201 seconds
+###############################################
+No solution found.
+Game result:
+	Map state ->
+ [[99 99 99 99 99 99 99 99 99 99]
+ [99 32 98 98 11 98 98 98 98 99]
+ [99  1 98 98 98 98 10 99 98 99]
+ [99 98 98 99 98 99 99 99 98 99]
+ [99 98 99 99 98 98 98 99 40 99]
+ [99 41 99 98 98 98 21 99 98 99]
+ [99 98 99 98 98 98 20 99 98 99]
+ [99 98 99 99 99 99 99 99 98 99]
+ [99  2 98 98 98 98 98 98 98 99]
+ [99 99 99 99 99 99 99 99 99 99]] 
+	Finished in 200 Steps.
+	Reward result-> -385
+Solved problem 5 in 11.271 seconds
+###############################################
+
+	Finished in 103 Steps.
+	Reward result-> 168.5 
+	Door opened at step True
+Solved problem 5 in 18.593 seconds
+###############################################
+
+	Finished in 91 Steps.
+	Reward result-> -114 
+	Door opened at step True
+Solved problem 5 in 17.992 seconds
+###############################################
+Game result:
+	Map state ->
+ [[99 99 99 99 99 99 99 99 99 99]
+ [99 32 98 98 98 98 98 98 98 99]
+ [99 98 98 98 11 10 98 99 98 99]
+ [99 98 98 99 98 99 99 99 98 99]
+ [99  1 99 99 98 98 98 99 40 99]
+ [99 41 99 98 98 98 21 99 98 99]
+ [99 98 99 98 98 98 20 99 98 99]
+ [99 98 99 99 99 99 99 99 98 99]
+ [99  2 98 98 98 98 98 98 98 99]
+ [99 99 99 99 99 99 99 99 99 99]] 
+	Finished in 200 Steps.
+	Reward result-> -1000
+Solved problem 5 in 8.154 seconds
+###############################################
+
+
+
+##  problem6 ##
+
+	Finished in 69 Steps.
+	Reward result-> 235 
+	Door opened at step True
+Solved problem 6 in 14.909 seconds
+###############################################
+
