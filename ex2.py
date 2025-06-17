@@ -5,6 +5,11 @@ from search import astar_search
 import numpy as np
 import copy
 
+# I used ChatGPT solely for syntax clarification, logic refinement, and function polishing. 
+# the code and algorithmic decisions were written and designed by me.
+# During the assignment, I also shared a brainstorming session with Amit Bruhim
+
+
 id = ["212437453"]
 #####################
 AGENT = 1
@@ -24,7 +29,7 @@ BAD_REWARD = 50
 ####################
 ACTIONS = ["U", "L", "R", "D"]
 
-DETERMINSITIC_PROBABLITIES = {
+DETERMINSITIC = {
                         'U': [1, 0, 0, 0],
                         'L': [0, 1, 0, 0],
                         'R': [0, 0, 1, 0],
@@ -50,12 +55,7 @@ class Controller:
         self.map, self.agent_pos, _, _, _ = self.original_game.get_current_state()
         # Compute A* path using helper method and correct directions
         self.astar_path = self.compute_Astar_path()
-        self.solution_exist = len(self.astar_path) > 0
-
-        #############################################################
         self.risky_keys_cache = {}
-        #######################################
-
         # Create deterministic game state sequence along A* path
         self.a_star_game_states = self.create_game_object_by_action(self.astar_path)
         # Create policy and value tables based on A* path
@@ -67,7 +67,6 @@ class Controller:
         childs_states = self.collect_childs_states(self.a_star_game_states)
         # Run value iteration on reachable states
         self.V, self.policy = self.value_iteration(childs_states)
-        
 
     # In this func - I restore the path of A* : My goal is to force the agent to walk in this path
     def compute_Astar_path(self):
@@ -99,7 +98,7 @@ class Controller:
         forced_games.append(current_game)
         # now i will run the all action like thay suppose to be 
         # Force the action by setting its probability to 100% for itself
-        current_game._chosen_action_prob = DETERMINSITIC_PROBABLITIES
+        current_game._chosen_action_prob = DETERMINSITIC
         for action in a_star_path:
             # Submit action (now forced)
             current_game.submit_next_action(action)
@@ -162,7 +161,7 @@ class Controller:
                 for action in ['U', 'L', 'R', 'D']:
                     next_game = copy.deepcopy(game_state)
                     # Force deterministic behavior
-                    next_game._chosen_action_prob = DETERMINSITIC_PROBABLITIES
+                    next_game._chosen_action_prob = DETERMINSITIC
                     # Apply the action and enqueue
                     next_game.submit_next_action(action)
                     queue.append((next_game, depth + 1))
@@ -201,7 +200,7 @@ class Controller:
             for i, _ in enumerate(ACTIONS):
                 p = base._chosen_action_prob[action][i]
                 sim = copy.deepcopy(base)
-                sim._chosen_action_prob = DETERMINSITIC_PROBABLITIES
+                sim._chosen_action_prob = DETERMINSITIC
                 sim.submit_next_action(action)
                 next_state = sim.get_current_state()
                 h_next = tuple(next_state[0].flatten())
@@ -236,16 +235,14 @@ class Controller:
         # if it is a key that is usefull -> check we didnt stack him 
         for key in self.usefull_key:
             R += self.penalty_if_blocked(map, key)
-
+        # check also if it a door that i wont open in A* so i dont want to get near her
         for door_number in range(40, 50):
             corresponding_key = door_number - 30
             if corresponding_key not in self.usefull_key:
                 R += self.penalty_if_blocked(map, door_number, penalty=BAD_REWARD // 2)
-
-
-
         return R
 
+    # here it is the all check with the corner thing
     def penalty_if_blocked(self, map, key_s, penalty=BAD_REWARD):
         key = (key_s, map.shape)
         if key in self.risky_keys_cache:
@@ -259,6 +256,7 @@ class Controller:
                 if not (0 <= ni < map.shape[0] and 0 <= nj < map.shape[1]):
                     continue
                 neighbor = map[ni, nj]
+                # i check if it a wall or!! - a door that not supposed to open
                 if neighbor == WALL or (40 <= neighbor < 50 and (neighbor - 30) not in self.usefull_key):
                     blocked += 1
                 if blocked >= 2:
@@ -268,12 +266,11 @@ class Controller:
         self.risky_keys_cache[key] = False
         return 0
 
-
     def init_v_table(self, state):
         agent_pos = state[1]
         return -abs(agent_pos[0] - self.goal[0]) - abs(agent_pos[1] - self.goal[1])
 
-
+    # chosse the next action i use manthen - A* again 
     def choose_next_action(self, state):
         h_state = tuple(state[0].flatten())
 
