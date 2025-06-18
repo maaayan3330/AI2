@@ -249,6 +249,18 @@ problem10 = (
 )
 
 
+# problems = [
+#     problem1,
+#     problem2,
+#     problem3,
+#     problem4,
+#     problem5,
+#     problem6,
+#     problem7,
+#     problem8,
+#     problem9,
+#     problem10
+# ]
 problems = [
     problem1,
     problem2,
@@ -257,14 +269,7 @@ problems = [
     problem5,
     problem6,
     problem7,
-    problem8,
-    problem9,
-    problem10
 ]
-# problems = [
-  
-#     problem6
-# ]
 
 
 examples = [example1, example2, example3, example4, example5]

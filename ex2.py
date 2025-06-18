@@ -6,7 +6,7 @@ import numpy as np
 import copy
 
 # I used ChatGPT solely for syntax clarification, logic refinement, and function polishing. 
-# the code and algorithmic decisions were written and designed by me.
+# the code and algorithmic decisions were written by me.
 # During the assignment, I also shared a brainstorming session with Amit Bruhim
 
 
@@ -269,42 +269,32 @@ class Controller:
     def init_v_table(self, state):
         agent_pos = state[1]
         return -abs(agent_pos[0] - self.goal[0]) - abs(agent_pos[1] - self.goal[1])
+    
 
-    # chosse the next action i use manthen - A* again 
     def choose_next_action(self, state):
         h_state = tuple(state[0].flatten())
 
+        # Follow A* path if still on it
         if h_state in self.policy_sol:
             return self.policy_sol[h_state]
 
-       
+        # Use value iteration policy if reachable
         if h_state in self.policy:
             return self.policy[h_state]
 
-        current_pos = state[1] 
+        # If completely off-path, reroute using A* to goal
+        current_map = state[0]
+        reroute_problem = PressurePlateProblem(current_map)
+        reroute_result = astar_search(reroute_problem)
 
-        min_distance = float('inf')
-        closest_state = None
+        if reroute_result is not None:
+            reroute_node, _ = reroute_result
+            path_nodes = list(reversed(reroute_node.path()))
+            reroute_actions = [node.action for node in path_nodes if node.action is not None]
+            corrected_actions = [self.correct_direction(a) for a in reroute_actions]
 
-        for idx, game in enumerate(self.a_star_game_states):
-            _, agent_pos, _, _, _ = game.get_current_state()
-            dist = abs(agent_pos[0] - current_pos[0]) + abs(agent_pos[1] - current_pos[1])
-            if dist < min_distance:
-                min_distance = dist
-                closest_state = game
+            if corrected_actions:
+                return corrected_actions[0]
 
-        if closest_state is not None:
-            current_map = state[0]
-            reroute_problem = PressurePlateProblem(current_map)
-            reroute_result = astar_search(reroute_problem)
-
-            if reroute_result is not None:
-                reroute_node, _ = reroute_result
-                path_nodes = list(reversed(reroute_node.path()))
-                reroute_actions = [node.action for node in path_nodes if node.action is not None]
-                corrected_actions = [self.correct_direction(a) for a in reroute_actions]
-
-                if corrected_actions:
-                    return corrected_actions[0]  
-
+        # If no path found, move randomly
         return np.random.choice(["U", "R", "D", "L"])
