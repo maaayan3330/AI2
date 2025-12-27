@@ -5,7 +5,6 @@ from search import astar_search
 import numpy as np
 import copy
 
-id = ["212437453"]
 
 AGENT = 1
 GOAL = 2
