@@ -2,13 +2,6 @@
 import search
 import utils
 
-
-####################################################################
-# As requested in Lecture 1, I would like to note that I used ChatGPT to learn some Python syntax I was unfamiliar with.
-# Specifically, in the "is_wall" function, I used ChatGPT to help me understand how to structure the logical condition correctly.
-# Other than that, all the thinking behind how to implement the idea and the cases I examined were challenging and based
-# on my own effort.
-####################################################################
 """ Rules """
 BLANK = 0
 WALL = 99
