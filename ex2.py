@@ -5,12 +5,6 @@ from search import astar_search
 import numpy as np
 import copy
 
-# I used ChatGPT solely for syntax clarification, logic refinement, and function polishing. 
-# the code and algorithmic decisions were written by me.
-# During the assignment, I also shared a brainstorming session with Amit Bruhim and consulted with Tom Sasson.
-
-
-id = ["212437453"]
 #####################
 AGENT = 1
 GOAL = 2
