@@ -7,7 +7,7 @@
   <img src="https://img.shields.io/badge/Environment-Stochastic%20Grid-success" />
 </p>
 
-This project is a direct continuation of the KobanGan (Assignment 1) puzzle, extending a deterministic grid environment into a stochastic setting.
+This project is a direct continuation of the Sokoban (Assignment 1) puzzle, extending a deterministic grid environment into a stochastic setting.
 
 An intelligent controller was implemented using **Markov Decision Processes (MDP)** and **Value Iteration**, enabling optimal decision-making under uncertainty.
 
